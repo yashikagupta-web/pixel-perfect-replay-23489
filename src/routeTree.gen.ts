@@ -10,33 +10,111 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DailyChallengeRouteImport } from './routes/daily-challenge'
+import { Route as DeathmatchRouteImport } from './routes/deathmatch'
+import { Route as LearnRouteImport } from './routes/learn'
+import { Route as PlaygroundRouteImport } from './routes/playground'
+import { Route as LearnIndexRouteImport } from './routes/learn.index'
+import { Route as LearnLessonIdRouteImport } from './routes/learn.$lessonId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DailyChallengeRoute = DailyChallengeRouteImport.update({
+  id: '/daily-challenge',
+  path: '/daily-challenge',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeathmatchRoute = DeathmatchRouteImport.update({
+  id: '/deathmatch',
+  path: '/deathmatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnRoute = LearnRouteImport.update({
+  id: '/learn',
+  path: '/learn',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaygroundRoute = PlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnIndexRoute = LearnIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LearnRoute,
+} as any)
+const LearnLessonIdRoute = LearnLessonIdRouteImport.update({
+  id: '/$lessonId',
+  path: '/$lessonId',
+  getParentRoute: () => LearnRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/daily-challenge': typeof DailyChallengeRoute
+  '/deathmatch': typeof DeathmatchRoute
+  '/learn': typeof LearnRouteWithChildren
+  '/playground': typeof PlaygroundRoute
+  '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/': typeof LearnIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/daily-challenge': typeof DailyChallengeRoute
+  '/deathmatch': typeof DeathmatchRoute
+  '/playground': typeof PlaygroundRoute
+  '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn': typeof LearnIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/daily-challenge': typeof DailyChallengeRoute
+  '/deathmatch': typeof DeathmatchRoute
+  '/learn': typeof LearnRouteWithChildren
+  '/playground': typeof PlaygroundRoute
+  '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/': typeof LearnIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/daily-challenge'
+    | '/deathmatch'
+    | '/learn'
+    | '/playground'
+    | '/learn/$lessonId'
+    | '/learn/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/daily-challenge'
+    | '/deathmatch'
+    | '/playground'
+    | '/learn/$lessonId'
+    | '/learn'
+  id:
+    | '__root__'
+    | '/'
+    | '/daily-challenge'
+    | '/deathmatch'
+    | '/learn'
+    | '/playground'
+    | '/learn/$lessonId'
+    | '/learn/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DailyChallengeRoute: typeof DailyChallengeRoute
+  DeathmatchRoute: typeof DeathmatchRoute
+  LearnRoute: typeof LearnRouteWithChildren
+  PlaygroundRoute: typeof PlaygroundRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +126,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/daily-challenge': {
+      id: '/daily-challenge'
+      path: '/daily-challenge'
+      fullPath: '/daily-challenge'
+      preLoaderRoute: typeof DailyChallengeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deathmatch': {
+      id: '/deathmatch'
+      path: '/deathmatch'
+      fullPath: '/deathmatch'
+      preLoaderRoute: typeof DeathmatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn': {
+      id: '/learn'
+      path: '/learn'
+      fullPath: '/learn'
+      preLoaderRoute: typeof LearnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/': {
+      id: '/learn/'
+      path: '/'
+      fullPath: '/learn/'
+      preLoaderRoute: typeof LearnIndexRouteImport
+      parentRoute: typeof LearnRoute
+    }
+    '/learn/$lessonId': {
+      id: '/learn/$lessonId'
+      path: '/$lessonId'
+      fullPath: '/learn/$lessonId'
+      preLoaderRoute: typeof LearnLessonIdRouteImport
+      parentRoute: typeof LearnRoute
+    }
   }
 }
 
+interface LearnRouteChildren {
+  LearnLessonIdRoute: typeof LearnLessonIdRoute
+  LearnIndexRoute: typeof LearnIndexRoute
+}
+
+const LearnRouteChildren: LearnRouteChildren = {
+  LearnLessonIdRoute: LearnLessonIdRoute,
+  LearnIndexRoute: LearnIndexRoute,
+}
+
+const LearnRouteWithChildren = LearnRoute._addFileChildren(LearnRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DailyChallengeRoute: DailyChallengeRoute,
+  DeathmatchRoute: DeathmatchRoute,
+  LearnRoute: LearnRouteWithChildren,
+  PlaygroundRoute: PlaygroundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
