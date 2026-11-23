@@ -28,3 +28,11 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- CodeCraft is frontend-only for now: all learner progress lives in one persisted Zustand store (`src/lib/store.ts`, `skipHydration` + rehydrate in `__root`) so SSR output never mismatches.
+- Course content (modules, lessons, challenges, projects) is static typed data under `src/data/`; pages read from it, never hardcode lists, so search and progress stay in sync.
+- The app shell (sidebar, top bar, right panel) is rendered once in `__root.tsx` via `AppShell`; the right panel's route list lives in `AppShell` so pages don't toggle it themselves.
+- Monaco is loaded only in the browser through `CodeEditor` (ClientOnly + lazy) because it touches `window` during import.
+- The playground runner is an in-browser preview interpreter (`src/lib/java-runner.ts`), not a real JVM; keep its limits stated in the UI.

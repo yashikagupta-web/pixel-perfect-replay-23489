@@ -10,16 +10,31 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CertificatesRouteImport } from './routes/certificates'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as DailyChallengeRouteImport } from './routes/daily-challenge'
 import { Route as DeathmatchRouteImport } from './routes/deathmatch'
 import { Route as LearnRouteImport } from './routes/learn'
+import { Route as MyLearningRouteImport } from './routes/my-learning'
 import { Route as PlaygroundRouteImport } from './routes/playground'
+import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LearnIndexRouteImport } from './routes/learn.index'
 import { Route as LearnLessonIdRouteImport } from './routes/learn.$lessonId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CertificatesRoute = CertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DailyChallengeRoute = DailyChallengeRouteImport.update({
@@ -37,9 +52,24 @@ const LearnRoute = LearnRouteImport.update({
   path: '/learn',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MyLearningRoute = MyLearningRouteImport.update({
+  id: '/my-learning',
+  path: '/my-learning',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlaygroundRoute = PlaygroundRouteImport.update({
   id: '/playground',
   path: '/playground',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LearnIndexRoute = LearnIndexRouteImport.update({
@@ -55,28 +85,43 @@ const LearnLessonIdRoute = LearnLessonIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/certificates': typeof CertificatesRoute
+  '/community': typeof CommunityRoute
   '/daily-challenge': typeof DailyChallengeRoute
   '/deathmatch': typeof DeathmatchRoute
   '/learn': typeof LearnRouteWithChildren
+  '/my-learning': typeof MyLearningRoute
   '/playground': typeof PlaygroundRoute
+  '/projects': typeof ProjectsRoute
+  '/settings': typeof SettingsRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
   '/learn/': typeof LearnIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/certificates': typeof CertificatesRoute
+  '/community': typeof CommunityRoute
   '/daily-challenge': typeof DailyChallengeRoute
   '/deathmatch': typeof DeathmatchRoute
+  '/my-learning': typeof MyLearningRoute
   '/playground': typeof PlaygroundRoute
+  '/projects': typeof ProjectsRoute
+  '/settings': typeof SettingsRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
   '/learn': typeof LearnIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/certificates': typeof CertificatesRoute
+  '/community': typeof CommunityRoute
   '/daily-challenge': typeof DailyChallengeRoute
   '/deathmatch': typeof DeathmatchRoute
   '/learn': typeof LearnRouteWithChildren
+  '/my-learning': typeof MyLearningRoute
   '/playground': typeof PlaygroundRoute
+  '/projects': typeof ProjectsRoute
+  '/settings': typeof SettingsRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
   '/learn/': typeof LearnIndexRoute
 }
@@ -84,37 +129,57 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/certificates'
+    | '/community'
     | '/daily-challenge'
     | '/deathmatch'
     | '/learn'
+    | '/my-learning'
     | '/playground'
+    | '/projects'
+    | '/settings'
     | '/learn/$lessonId'
     | '/learn/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/certificates'
+    | '/community'
     | '/daily-challenge'
     | '/deathmatch'
+    | '/my-learning'
     | '/playground'
+    | '/projects'
+    | '/settings'
     | '/learn/$lessonId'
     | '/learn'
   id:
     | '__root__'
     | '/'
+    | '/certificates'
+    | '/community'
     | '/daily-challenge'
     | '/deathmatch'
     | '/learn'
+    | '/my-learning'
     | '/playground'
+    | '/projects'
+    | '/settings'
     | '/learn/$lessonId'
     | '/learn/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CertificatesRoute: typeof CertificatesRoute
+  CommunityRoute: typeof CommunityRoute
   DailyChallengeRoute: typeof DailyChallengeRoute
   DeathmatchRoute: typeof DeathmatchRoute
   LearnRoute: typeof LearnRouteWithChildren
+  MyLearningRoute: typeof MyLearningRoute
   PlaygroundRoute: typeof PlaygroundRoute
+  ProjectsRoute: typeof ProjectsRoute
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -124,6 +189,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/certificates': {
+      id: '/certificates'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof CertificatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/daily-challenge': {
@@ -147,11 +226,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LearnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/my-learning': {
+      id: '/my-learning'
+      path: '/my-learning'
+      fullPath: '/my-learning'
+      preLoaderRoute: typeof MyLearningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/playground': {
       id: '/playground'
       path: '/playground'
       fullPath: '/playground'
       preLoaderRoute: typeof PlaygroundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/learn/': {
@@ -185,10 +285,15 @@ const LearnRouteWithChildren = LearnRoute._addFileChildren(LearnRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CertificatesRoute: CertificatesRoute,
+  CommunityRoute: CommunityRoute,
   DailyChallengeRoute: DailyChallengeRoute,
   DeathmatchRoute: DeathmatchRoute,
   LearnRoute: LearnRouteWithChildren,
+  MyLearningRoute: MyLearningRoute,
   PlaygroundRoute: PlaygroundRoute,
+  ProjectsRoute: ProjectsRoute,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

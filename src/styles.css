@@ -186,6 +186,7 @@
   padding: 1rem 1.125rem;
   overflow-x: auto;
   color: var(--foreground);
+  font-variant-ligatures: none;
 }
 
 @utility prose-lesson {
@@ -199,6 +200,7 @@
   & code {
     font-family: var(--font-mono);
     font-size: 0.85em;
+    font-variant-ligatures: none;
     color: var(--primary);
     background: var(--secondary);
     padding: 0.1em 0.4em;

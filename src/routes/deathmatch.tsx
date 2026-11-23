@@ -40,6 +40,7 @@ function Deathmatch() {
   const wins = useStore((s) => s.duelWins);
   const played = useStore((s) => s.duelsPlayed);
   const recordDuel = useStore((s) => s.recordDuel);
+  const xp = useStore((s) => s.xp);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [rival, setRival] = useState(rivals[0] as string);
@@ -123,7 +124,7 @@ function Deathmatch() {
   };
 
   const q = qs[round];
-  const board = [...leaderboard, { name, xp: useStore.getState().xp, wins }].sort((a, b) => b.xp - a.xp);
+  const board = [...leaderboard, { name, xp, wins }].sort((a, b) => b.xp - a.xp);
 
   return (
     <div>

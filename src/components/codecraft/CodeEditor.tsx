@@ -11,7 +11,7 @@ export interface CodeEditorProps {
   height?: string;
 }
 
-function EditorFallback({ value, height = "100%" }: { value: string; height?: string }) {
+function EditorFallback({ value, height = "100%" }: { value: string; height?: string | undefined }) {
   return (
     <pre className="m-0 overflow-auto bg-canvas p-4 font-mono text-[13px] leading-[1.7] text-muted-foreground" style={{ height }}>
       {value}

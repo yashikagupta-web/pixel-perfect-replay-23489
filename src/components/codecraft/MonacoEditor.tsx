@@ -37,10 +37,10 @@ export default function MonacoEditor({ value, onChange, readOnly, fontSize = 14,
       onChange={(v) => onChange?.(v ?? "")}
       loading={<span className="font-mono text-xs text-subtle">Loading editor…</span>}
       options={{
-        readOnly,
+        readOnly: readOnly ?? false,
         fontSize,
         fontFamily: "'JetBrains Mono', monospace",
-        fontLigatures: true,
+        fontLigatures: false,
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         padding: { top: 16, bottom: 16 },
