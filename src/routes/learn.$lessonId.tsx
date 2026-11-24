@@ -6,6 +6,7 @@ import { QuizCard } from "@/components/codecraft/QuizCard";
 import { RichText } from "@/components/codecraft/RichText";
 import { Button } from "@/components/ui/button";
 import { findLesson, LESSON_XP, modules, nextLesson, prevLesson } from "@/data/curriculum";
+import { useActiveTimeTracker } from "@/lib/progress";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ function LessonPage() {
   const completed = useStore((s) => s.completedLessons);
   const completeLesson = useStore((s) => s.completeLesson);
   const setPlaygroundCode = useStore((s) => s.setPlaygroundCode);
+  useActiveTimeTracker();
   const navigate = useNavigate();
   const mod = modules.find((m) => m.id === lesson.moduleId);
   const done = completed.includes(lesson.id);

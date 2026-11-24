@@ -3,9 +3,10 @@ import { Award, CheckCircle2, Lock } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 import { LevelBadge, PageHeader, ProgressBar } from "@/components/codecraft/PageHeader";
-import { achievements, weeklyActivity } from "@/data/content";
+import { achievements } from "@/data/content";
 import { allLessons, modules } from "@/data/curriculum";
 import { useUnlockedAchievements } from "@/lib/achievements";
+import { useLearnerProgress } from "@/lib/progress";
 import { levelFromXp, moduleProgress, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ function MyLearning() {
   const completed = useStore((s) => s.completedLessons);
   const xp = useStore((s) => s.xp);
   const unlocked = useUnlockedAchievements();
+  const { week, weekXp } = useLearnerProgress();
   const lvl = levelFromXp(xp);
   const overall = Math.round((completed.length / allLessons.length) * 100);
   const recent = allLessons.filter((l) => completed.includes(l.id)).slice(-5).reverse();
@@ -48,10 +50,12 @@ function MyLearning() {
           <p className="mt-2 text-xs text-subtle">{lvl.toNext - lvl.into} XP to Level {lvl.level + 1}</p>
         </div>
         <div className="surface p-5">
-          <p className="text-xs text-muted-foreground">XP this week</p>
+          <p className="text-xs text-muted-foreground">
+            XP this week · <span className="font-semibold text-foreground tabular-nums">{weekXp}</span>
+          </p>
           <div className="mt-1 h-20">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyActivity}>
+              <BarChart data={week}>
                 <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "var(--subtle)", fontSize: 10 }} />
                 <Tooltip
                   cursor={{ fill: "var(--secondary)" }}

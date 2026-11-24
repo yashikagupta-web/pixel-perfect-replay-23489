@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { LevelBadge, PageHeader } from "@/components/codecraft/PageHeader";
 import { QuizCard } from "@/components/codecraft/QuizCard";
 import { CHALLENGE_XP, challenges } from "@/data/content";
+import { useActiveTimeTracker } from "@/lib/progress";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ function useCountdown() {
 function DailyChallenge() {
   const solved = useStore((s) => s.solvedChallenges);
   const solveChallenge = useStore((s) => s.solveChallenge);
+  useActiveTimeTracker();
   const [selected, setSelected] = useState(challenges[0]?.id ?? "");
   const countdown = useCountdown();
   const current = challenges.find((c) => c.id === selected) ?? challenges[0];

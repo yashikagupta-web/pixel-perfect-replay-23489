@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLearnerProgress } from "@/lib/progress";
 import { useStore, type AppNotification } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { SearchBox } from "./SearchBox";
@@ -32,11 +33,9 @@ export function initials(name: string) {
 }
 
 export function TopNav({ onOpenMenu }: { onOpenMenu: () => void }) {
-  const xp = useStore((s) => s.xp);
-  const streak = useStore((s) => s.streak);
+  const { xp, streak, name, hasName } = useLearnerProgress();
   const notifications = useStore((s) => s.notifications);
   const markAllRead = useStore((s) => s.markAllRead);
-  const name = useStore((s) => s.settings.name);
   const email = useStore((s) => s.settings.email);
   const navigate = useNavigate();
   const unread = notifications.filter((n) => !n.read).length;
@@ -86,6 +85,11 @@ export function TopNav({ onOpenMenu }: { onOpenMenu: () => void }) {
             </div>
             <DropdownMenuSeparator className="m-0 bg-border" />
             <div className="max-h-80 overflow-y-auto p-1.5">
+              {notifications.length === 0 && (
+                <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                  No notifications yet. Lesson, challenge and module updates show up here.
+                </p>
+              )}
               {notifications.slice(0, 8).map((n) => {
                 const Icon = noteIcon[n.kind];
                 return (
@@ -114,13 +118,13 @@ export function TopNav({ onOpenMenu }: { onOpenMenu: () => void }) {
               aria-label="Open profile menu"
               className="grid size-10 place-items-center rounded-full bg-cream font-display text-sm font-extrabold text-cream-foreground ring-2 ring-transparent transition hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-primary"
             >
-              {initials(name)}
+              {hasName ? initials(name) : <User className="size-5" />}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60 rounded-card border-border bg-popover p-1.5 shadow-pop">
             <DropdownMenuLabel className="px-3 py-2">
               <span className="block text-sm font-semibold">{name}</span>
-              <span className="block text-xs font-normal text-subtle">{email}</span>
+              <span className="block text-xs font-normal text-subtle">{email || "Progress saved on this device"}</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuItem asChild className="gap-2.5 rounded-btn px-3 py-2">

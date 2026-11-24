@@ -3,8 +3,10 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 import { LESSON_XP, modules } from "@/data/curriculum";
 import { CHALLENGE_XP, seedPosts, type Post } from "@/data/content";
+import { dayKey, type ActivityLog } from "@/lib/activity";
 
 export const DUEL_WIN_XP = 75;
+export const DUEL_PLAY_XP = 15;
 export const PROJECT_XP = 200;
 
 export const DEFAULT_CODE = `public class Main {
@@ -34,7 +36,8 @@ interface Settings {
 
 export interface CodeCraftState {
   xp: number;
-  streak: number;
+  /** Per-day XP and active minutes; streaks and weekly charts derive from it. */
+  activity: ActivityLog;
   completedLessons: string[];
   solvedChallenges: string[];
   duelWins: number;
@@ -57,34 +60,42 @@ export interface CodeCraftState {
   votePost: (id: string) => void;
   markAllRead: () => void;
   setPlaygroundCode: (code: string) => void;
+  logMinutes: (minutes: number) => void;
   toggleSidebar: () => void;
   upgradePro: () => void;
   updateSettings: (patch: Partial<Settings>) => void;
   resetProgress: () => void;
 }
 
-const seedNotifications: AppNotification[] = [
-  { id: "n1", kind: "milestone", title: "You passed 1,000 XP — nice momentum!", time: "1h ago", read: false },
-  { id: "n2", kind: "challenge", title: "Today's Daily Challenge is live", time: "3h ago", read: false },
-  { id: "n3", kind: "lesson", title: "Completed: Working with Strings", time: "Yesterday", read: true },
-  { id: "n4", kind: "achievement", title: "Achievement unlocked: Week Warrior", time: "2d ago", read: true },
-];
-
+/** A brand-new learner: no XP, no streak, no lessons, no achievements. */
 const initialProgress = {
-  xp: 1250,
-  streak: 8,
-  completedLessons: ["what-is-java", "first-program", "jdk-jre-jvm", "primitive-types", "strings", "type-casting", "operators"],
+  xp: 0,
+  activity: {} as ActivityLog,
+  completedLessons: [] as string[],
   solvedChallenges: [] as string[],
-  duelWins: 3,
-  duelsPlayed: 5,
-  projectSteps: { "bank-account": [0, 1] } as Record<string, number[]>,
+  duelWins: 0,
+  duelsPlayed: 0,
+  projectSteps: {} as Record<string, number[]>,
   completedProjects: [] as string[],
-  posts: seedPosts,
-  votedPosts: [] as string[],
-  notifications: seedNotifications,
-  playgroundCode: DEFAULT_CODE,
+  notifications: [] as AppNotification[],
   isPro: false,
 };
+
+const defaultSettings: Settings = {
+  name: "",
+  email: "",
+  dailyGoal: 30,
+  emailReminders: true,
+  challengeReminders: true,
+  editorFontSize: 14,
+};
+
+/** Adds XP to today's entry in the activity log. */
+export function withXp(activity: ActivityLog, xp: number, now: Date = new Date()): ActivityLog {
+  const key = dayKey(now);
+  const day = activity[key] ?? { xp: 0, minutes: 0 };
+  return { ...activity, [key]: { ...day, xp: day.xp + xp } };
+}
 
 let nid = 100;
 const note = (kind: AppNotification["kind"], title: string): AppNotification => ({
@@ -99,15 +110,11 @@ export const useStore = create<CodeCraftState>()(
   persist(
     (set, get) => ({
       ...initialProgress,
+      posts: seedPosts,
+      votedPosts: [],
+      playgroundCode: DEFAULT_CODE,
       sidebarCollapsed: false,
-      settings: {
-        name: "Yashika Gupta",
-        email: "yashika@codecraft.dev",
-        dailyGoal: 30,
-        emailReminders: true,
-        challengeReminders: true,
-        editorFontSize: 14,
-      },
+      settings: defaultSettings,
 
       completeLesson: (id) => {
         if (get().completedLessons.includes(id)) return false;
@@ -121,6 +128,7 @@ export const useStore = create<CodeCraftState>()(
           return {
             completedLessons: completed,
             xp: s.xp + LESSON_XP,
+            activity: withXp(s.activity, LESSON_XP),
             notifications: [...notes, ...s.notifications],
           };
         });
@@ -132,17 +140,22 @@ export const useStore = create<CodeCraftState>()(
         set((s) => ({
           solvedChallenges: [...s.solvedChallenges, id],
           xp: s.xp + CHALLENGE_XP,
+          activity: withXp(s.activity, CHALLENGE_XP),
           notifications: [note("challenge", `Daily challenge solved · +${CHALLENGE_XP} XP`), ...s.notifications],
         }));
         return true;
       },
 
       recordDuel: (won) =>
-        set((s) => ({
-          duelsPlayed: s.duelsPlayed + 1,
-          duelWins: s.duelWins + (won ? 1 : 0),
-          xp: s.xp + (won ? DUEL_WIN_XP : 15),
-        })),
+        set((s) => {
+          const gained = won ? DUEL_WIN_XP : DUEL_PLAY_XP;
+          return {
+            duelsPlayed: s.duelsPlayed + 1,
+            duelWins: s.duelWins + (won ? 1 : 0),
+            xp: s.xp + gained,
+            activity: withXp(s.activity, gained),
+          };
+        }),
 
       toggleProjectStep: (projectId, step, totalSteps) =>
         set((s) => {
@@ -158,6 +171,7 @@ export const useStore = create<CodeCraftState>()(
                 : [...s.completedProjects, projectId]
               : s.completedProjects.filter((p) => p !== projectId),
             xp: done && !wasDone ? s.xp + PROJECT_XP : s.xp,
+            activity: done && !wasDone ? withXp(s.activity, PROJECT_XP) : s.activity,
           };
         }),
 
@@ -180,15 +194,38 @@ export const useStore = create<CodeCraftState>()(
 
       markAllRead: () => set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) })),
       setPlaygroundCode: (code) => set({ playgroundCode: code }),
+      logMinutes: (minutes) =>
+        set((s) => {
+          const key = dayKey();
+          const day = s.activity[key] ?? { xp: 0, minutes: 0 };
+          return { activity: { ...s.activity, [key]: { ...day, minutes: day.minutes + minutes } } };
+        }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       upgradePro: () => set({ isPro: true }),
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
-      resetProgress: () => set({ ...initialProgress, completedLessons: [], xp: 0, streak: 0, duelWins: 0, duelsPlayed: 0, projectSteps: {} }),
+      resetProgress: () => set({ ...initialProgress }),
     }),
     {
       name: "codecraft-state",
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
+      version: 2,
+      // Version 1 shipped with sample progress (XP, streak, lessons, duels) and a
+      // sample profile. Drop those so returning visitors start from their real zero.
+      migrate: (persisted, version) => {
+        const old = (persisted ?? {}) as Partial<CodeCraftState> & { streak?: number };
+        if (version >= 2) return old as CodeCraftState;
+        const oldSettings: Partial<Settings> = old.settings ?? {};
+        const isSample = oldSettings.name === "Yashika Gupta" && oldSettings.email === "yashika@codecraft.dev";
+        return {
+          ...initialProgress,
+          posts: old.posts ?? seedPosts,
+          votedPosts: old.votedPosts ?? [],
+          playgroundCode: old.playgroundCode ?? DEFAULT_CODE,
+          sidebarCollapsed: old.sidebarCollapsed ?? false,
+          settings: { ...defaultSettings, ...oldSettings, ...(isSample ? { name: "", email: "" } : {}) },
+        } as CodeCraftState;
+      },
     },
   ),
 );

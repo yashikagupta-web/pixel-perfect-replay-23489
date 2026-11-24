@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Clock, Flame, Play, Swords, Target, Zap } from "lucide-react";
+import { useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { LevelBadge, ProgressBar } from "@/components/codecraft/PageHeader";
+import { AchievementsCard, ProfileSummaryCard, StreakCard, UpcomingCard } from "@/components/codecraft/ProgressWidgets";
 import { Button } from "@/components/ui/button";
-import { challenges, weeklyActivity } from "@/data/content";
+import { CHALLENGE_XP, challenges } from "@/data/content";
 import { allLessons, modules } from "@/data/curriculum";
-import { moduleProgress, useStore } from "@/lib/store";
+import { formatMinutes, useLearnerProgress } from "@/lib/progress";
+import { DUEL_WIN_XP, moduleProgress, useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,49 +55,71 @@ function HeroArt() {
 }
 
 function Dashboard() {
-  const name = useStore((s) => s.settings.name);
-  const xp = useStore((s) => s.xp);
-  const streak = useStore((s) => s.streak);
+  const p = useLearnerProgress();
   const completed = useStore((s) => s.completedLessons);
   const solved = useStore((s) => s.solvedChallenges);
-  const next = allLessons.find((l) => !completed.includes(l.id)) ?? allLessons[allLessons.length - 1];
-  const overall = Math.round((completed.length / allLessons.length) * 100);
-  const inProgress = modules
-    .map((m) => ({ m, p: moduleProgress(completed, m.id) }))
-    .filter(({ p }) => p.pct < 100)
-    .slice(0, 3);
-  const today = challenges[0];
-  const totalMinutes = weeklyActivity.reduce((a, d) => a + d.minutes, 0);
+  const [metric, setMetric] = useState<"minutes" | "xp">("minutes");
 
-  const stats = [
-    { label: "Total XP", value: xp.toLocaleString("en-IN"), icon: Zap, hint: "+260 this week" },
-    { label: "Day streak", value: `${streak}`, icon: Flame, hint: "Best: 14 days" },
-    { label: "Lessons done", value: `${completed.length}/${allLessons.length}`, icon: BookOpen, hint: `${overall}% of the course` },
-    { label: "Time this week", value: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`, icon: Clock, hint: "Goal: 3h 30m" },
-  ];
+  const isNew = p.lessonsDone === 0;
+  const allDone = p.lessonsDone === p.lessonsTotal;
+  const next = allLessons.find((l) => !completed.includes(l.id)) ?? allLessons[0];
+
+  // Started-but-unfinished modules first, then the next untouched ones.
+  const withProgress = modules.map((m) => ({ m, p: moduleProgress(completed, m.id) }));
+  const continueModules = [
+    ...withProgress.filter(({ p: mp }) => mp.done > 0 && mp.pct < 100),
+    ...withProgress.filter(({ p: mp }) => mp.done === 0),
+  ].slice(0, 3);
+
+  const today = challenges[0];
+  const todaySolved = !!today && solved.includes(today.id);
+  const weekEmpty = p.week.every((d) => d.minutes === 0 && d.xp === 0);
+  const goalPct = Math.min(100, Math.round((p.weekMinutes / Math.max(1, p.weeklyGoalMinutes)) * 100));
+
+  const firstName = p.hasName ? p.name.split(" ")[0] : null;
+  const greeting = isNew ? (firstName ? `Welcome, ${firstName}` : "Welcome to CodeCraft") : `Welcome back${firstName ? `, ${firstName}` : ""}`;
 
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-hero bg-cream text-cream-foreground">
+      <section aria-labelledby="hero-title" className="relative overflow-hidden rounded-hero bg-cream text-cream-foreground">
         <div className="dot-grid absolute inset-0 opacity-60" />
         <div className="relative grid items-center gap-6 p-6 sm:p-8 md:grid-cols-[1.3fr_1fr]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink/55">Welcome back, {name.split(" ")[0]}</p>
-            <h1 className="mt-3 max-w-lg text-3xl font-extrabold leading-[1.1] sm:text-[40px]">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink/55">{greeting}</p>
+            <h1 id="hero-title" className="mt-3 max-w-lg text-3xl font-extrabold leading-[1.1] sm:text-[40px]">
               Craft Java, one clean line at a time.
             </h1>
             <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink/70">
-              Up next: <strong className="text-ink">{next?.title}</strong> in {next?.moduleTitle}. You're {overall}% through the
-              Java track.
+              {allDone ? (
+                <>You've completed every lesson on the Java track. Revisit any module or take on a project.</>
+              ) : isNew ? (
+                <>
+                  Start with <strong className="text-ink">{next?.title}</strong> ({next?.minutes} min), the first lesson in{" "}
+                  {next?.moduleTitle}.
+                </>
+              ) : (
+                <>
+                  Up next: <strong className="text-ink">{next?.title}</strong> in {next?.moduleTitle}. You're {p.coursePct}% through the Java
+                  track.
+                </>
+              )}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              {next && (
+              {allDone ? (
                 <Button asChild size="lg">
-                  <Link to="/learn/$lessonId" params={{ lessonId: next.id }}>
-                    <Play fill="currentColor" /> Continue learning
+                  <Link to="/projects">
+                    <Play fill="currentColor" /> Build a project
                   </Link>
                 </Button>
+              ) : (
+                next && (
+                  <Button asChild size="lg">
+                    <Link to="/learn/$lessonId" params={{ lessonId: next.id }}>
+                      <Play fill="currentColor" /> {isNew ? "Start learning" : "Continue learning"}
+                    </Link>
+                  </Button>
+                )
               )}
               <Button asChild size="lg" variant="outline-ink">
                 <Link to="/learn">Browse modules</Link>
@@ -107,80 +133,137 @@ function Dashboard() {
       </section>
 
       {/* Stats */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="surface p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">{s.label}</span>
-              <s.icon className="size-4 text-primary" />
-            </div>
-            <p className="mt-2 font-display text-2xl font-extrabold tabular-nums">{s.value}</p>
-            <p className="mt-0.5 text-xs text-subtle">{s.hint}</p>
-          </div>
-        ))}
+      <section aria-label="Your stats" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          to="/my-learning"
+          label="Total XP"
+          value={p.xp.toLocaleString("en-IN")}
+          icon={Zap}
+          hint={p.weekXp > 0 ? `+${p.weekXp.toLocaleString("en-IN")} this week` : "Finish a lesson to earn XP"}
+        />
+        <StatCard
+          to="/daily-challenge"
+          label="Day streak"
+          value={`${p.streak}`}
+          icon={Flame}
+          hint={p.bestStreak > 0 ? `Best: ${p.bestStreak} ${p.bestStreak === 1 ? "day" : "days"}` : "Learn today to start one"}
+        />
+        <StatCard
+          to="/learn"
+          label="Lessons done"
+          value={`${p.lessonsDone}/${p.lessonsTotal}`}
+          icon={BookOpen}
+          hint={`${p.coursePct}% of the course`}
+        />
+        <StatCard
+          to="/playground"
+          label="Coding this week"
+          value={formatMinutes(p.weekMinutes)}
+          icon={Clock}
+          hint={`Goal: ${formatMinutes(p.weeklyGoalMinutes)} · ${goalPct}%`}
+        />
       </section>
 
       {/* Continue learning */}
-      <section>
+      <section aria-labelledby="continue-title">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Continue learning</h2>
+          <h2 id="continue-title" className="text-lg font-bold">
+            {isNew ? "Start here" : "Continue learning"}
+          </h2>
           <Link to="/learn" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
             All modules <ArrowRight className="size-3.5" />
           </Link>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {inProgress.map(({ m, p }, i) => {
-            const nextInModule = m.lessons.find((l) => !completed.includes(l.id)) ?? m.lessons[0];
-            return (
-              <Link
-                key={m.id}
-                to="/learn/$lessonId"
-                params={{ lessonId: nextInModule?.id ?? "" }}
-                className={`group surface flex flex-col p-5 transition-all hover:-translate-y-0.5 hover:border-subtle ${i === 0 ? "ring-1 ring-primary/40" : ""}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-subtle">MODULE {String(m.index).padStart(2, "0")}</span>
-                  <LevelBadge level={m.level} />
-                </div>
-                <h3 className="mt-3 text-base font-bold">{m.title}</h3>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{m.description}</p>
-                <div className="mt-auto pt-5">
-                  <div className="mb-2 flex justify-between text-xs">
-                    <span className="text-subtle">
-                      {p.done}/{p.total} lessons
-                    </span>
-                    <span className="font-semibold text-primary">{p.pct}%</span>
+        {continueModules.length === 0 ? (
+          <div className="surface flex flex-wrap items-center justify-between gap-3 p-5">
+            <p className="text-sm text-muted-foreground">Every module is complete. Your certificates are ready.</p>
+            <Button asChild variant="secondary">
+              <Link to="/certificates">View certificates</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {continueModules.map(({ m, p: mp }, i) => {
+              const nextInModule = m.lessons.find((l) => !completed.includes(l.id)) ?? m.lessons[0];
+              return (
+                <Link
+                  key={m.id}
+                  to="/learn/$lessonId"
+                  params={{ lessonId: nextInModule?.id ?? "" }}
+                  className={cn(
+                    "group surface flex flex-col p-5 transition-all hover:-translate-y-0.5 hover:border-subtle",
+                    i === 0 && "ring-1 ring-primary/40",
+                    i === 2 && "sm:hidden lg:flex",
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs text-subtle">MODULE {String(m.index).padStart(2, "0")}</span>
+                    <LevelBadge level={m.level} />
                   </div>
-                  <ProgressBar value={p.pct} />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                  <h3 className="mt-3 text-base font-bold">{m.title}</h3>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{m.description}</p>
+                  <div className="mt-auto pt-5">
+                    <div className="mb-2 flex justify-between text-xs">
+                      <span className="truncate text-subtle">
+                        {mp.done === 0 ? `Next: ${nextInModule?.title ?? ""}` : `${mp.done}/${mp.total} lessons`}
+                      </span>
+                      <span className="shrink-0 font-semibold text-primary">{mp.done === 0 ? "Start" : `${mp.pct}%`}</span>
+                    </div>
+                    <ProgressBar value={mp.pct} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* Activity + side cards */}
+      {/* Activity + challenge cards */}
       <section className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="surface p-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold">Learning activity</h2>
-              <p className="text-xs text-subtle">Minutes spent coding this week</p>
+              <p className="text-xs text-subtle">
+                {metric === "minutes" ? "Active minutes in lessons, challenges and the playground" : "XP earned each day"} · this week
+              </p>
             </div>
-            <span className="rounded-chip bg-secondary px-2 py-1 text-xs font-medium text-muted-foreground">This week</span>
+            <div role="tablist" aria-label="Chart metric" className="flex rounded-btn bg-secondary p-0.5">
+              {(["minutes", "xp"] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="tab"
+                  aria-selected={metric === k}
+                  onClick={() => setMetric(k)}
+                  className={cn(
+                    "rounded-chip px-3 py-1 text-xs font-semibold transition-colors",
+                    metric === k ? "bg-card text-foreground" : "text-subtle hover:text-foreground",
+                  )}
+                >
+                  {k === "minutes" ? "Minutes" : "XP"}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="mt-4 h-56">
+          <div className="relative mt-4 h-56">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyActivity} margin={{ left: -20, right: 4, top: 8 }}>
+              <AreaChart data={p.week} margin={{ left: -20, right: 4, top: 8 }}>
                 <defs>
-                  <linearGradient id="fillMinutes" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="fillActivity" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
                     <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4" />
                 <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "var(--subtle)", fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--subtle)", fontSize: 12 }} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={false}
+                  domain={[0, (max: number) => Math.max(max, metric === "minutes" ? 30 : 100)]}
+                  tick={{ fill: "var(--subtle)", fontSize: 12 }}
+                />
                 <Tooltip
                   cursor={{ stroke: "var(--border)" }}
                   contentStyle={{
@@ -190,15 +273,26 @@ function Dashboard() {
                     color: "var(--foreground)",
                     fontSize: 12,
                   }}
-                  formatter={(v) => [`${String(v)} min`, "Time"]}
+                  formatter={(v) => (metric === "minutes" ? [`${String(v)} min`, "Time"] : [`${String(v)} XP`, "Earned"])}
                 />
-                <Area type="monotone" dataKey="minutes" stroke="var(--primary)" strokeWidth={2.5} fill="url(#fillMinutes)" />
+                <Area type="monotone" dataKey={metric} stroke="var(--primary)" strokeWidth={2.5} fill="url(#fillActivity)" />
               </AreaChart>
             </ResponsiveContainer>
+            {weekEmpty && (
+              <div className="absolute inset-0 grid place-items-center">
+                <div className="max-w-xs rounded-card border border-border bg-card/95 p-4 text-center">
+                  <p className="text-sm font-semibold">No activity this week yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Finish a lesson or write some code and your week fills in here.</p>
+                  <Link to="/playground" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                    Open the playground <ArrowRight className="size-3" />
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           {today && (
             <Link to="/daily-challenge" className="group surface-2 block p-5 transition-colors hover:border-primary/50">
               <div className="flex items-center justify-between">
@@ -209,10 +303,10 @@ function Dashboard() {
               </div>
               <h3 className="mt-3 text-base font-bold">{today.title}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {solved.includes(today.id) ? "Solved today — nice work." : "Predict the output and earn +100 XP."}
+                {todaySolved ? "Solved today — nice work." : `Predict the output and earn +${CHALLENGE_XP} XP.`}
               </p>
               <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-foreground group-hover:text-primary">
-                {solved.includes(today.id) ? "Review solution" : "Solve now"} <ArrowRight className="size-3.5" />
+                {todaySolved ? "Review solution" : "Solve now"} <ArrowRight className="size-3.5" />
               </span>
             </Link>
           )}
@@ -221,13 +315,50 @@ function Dashboard() {
               <Swords className="size-4" /> Deathmatch
             </span>
             <h3 className="mt-3 text-base font-bold">Quick duel · 5 rounds</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Answer faster than your rival to climb the leaderboard.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {p.duelsPlayed === 0
+                ? `No duels yet. Win your first to earn +${DUEL_WIN_XP} XP.`
+                : `Your record: ${p.duelWins}W – ${p.duelsPlayed - p.duelWins}L`}
+            </p>
             <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold group-hover:text-primary">
-              Find opponent <ArrowRight className="size-3.5" />
+              {p.duelsPlayed === 0 ? "Play your first duel" : "Play again"} <ArrowRight className="size-3.5" />
             </span>
           </Link>
         </div>
       </section>
+
+      {/* Profile, streak, upcoming and achievements — shown in the side panel on wide screens */}
+      <section aria-label="Your progress" className="grid gap-4 md:grid-cols-2 xl:hidden">
+        <ProfileSummaryCard />
+        <StreakCard />
+        <UpcomingCard />
+        <AchievementsCard />
+      </section>
     </div>
+  );
+}
+
+function StatCard({
+  to,
+  label,
+  value,
+  hint,
+  icon: Icon,
+}: {
+  to: "/my-learning" | "/daily-challenge" | "/learn" | "/playground";
+  label: string;
+  value: string;
+  hint: string;
+  icon: typeof Zap;
+}) {
+  return (
+    <Link to={to} className="surface group block p-4 transition-colors hover:border-primary/40">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <Icon className="size-4 text-primary" />
+      </div>
+      <p className="mt-2 font-display text-2xl font-extrabold tabular-nums">{value}</p>
+      <p className="mt-0.5 truncate text-xs text-subtle group-hover:text-muted-foreground">{hint}</p>
+    </Link>
   );
 }

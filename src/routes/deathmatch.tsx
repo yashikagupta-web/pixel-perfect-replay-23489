@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/codecraft/PageHeader";
 import { Button } from "@/components/ui/button";
 import { duelQuestions, leaderboard, type DuelQuestion } from "@/data/content";
 import { initials } from "@/components/layout/TopNav";
+import { displayName, useActiveTimeTracker } from "@/lib/progress";
 import { DUEL_WIN_XP, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +37,8 @@ function shuffle<T>(arr: T[]) {
 }
 
 function Deathmatch() {
-  const name = useStore((s) => s.settings.name);
+  const name = displayName(useStore((s) => s.settings.name));
+  useActiveTimeTracker();
   const wins = useStore((s) => s.duelWins);
   const played = useStore((s) => s.duelsPlayed);
   const recordDuel = useStore((s) => s.recordDuel);

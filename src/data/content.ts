@@ -225,22 +225,6 @@ export const seedPosts: Post[] = [
   },
 ];
 
-export const upcomingSessions = [
-  { title: "Live: OOP in Practice", time: "Today · 6:00 PM", host: "Mentor Kavya" },
-  { title: "Deathmatch Weekend Cup", time: "Sat · 11:00 AM", host: "Community" },
-  { title: "Code Review Circle", time: "Mon · 7:30 PM", host: "Mentor Rohan" },
-];
-
-export const weeklyActivity = [
-  { day: "Mon", minutes: 35, xp: 120 },
-  { day: "Tue", minutes: 52, xp: 180 },
-  { day: "Wed", minutes: 28, xp: 90 },
-  { day: "Thu", minutes: 64, xp: 220 },
-  { day: "Fri", minutes: 45, xp: 150 },
-  { day: "Sat", minutes: 70, xp: 260 },
-  { day: "Sun", minutes: 40, xp: 140 },
-];
-
 export interface Achievement {
   id: string;
   title: string;

@@ -6,6 +6,7 @@ import { PageHeader, ProgressBar } from "@/components/codecraft/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { modules, type Module } from "@/data/curriculum";
+import { displayName } from "@/lib/progress";
 import { moduleProgress, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/certificates")({
@@ -50,7 +51,7 @@ function CertificateArt({ mod, name }: { mod: Module; name: string }) {
 
 function Certificates() {
   const completed = useStore((s) => s.completedLessons);
-  const name = useStore((s) => s.settings.name);
+  const name = displayName(useStore((s) => s.settings.name));
   const earned = modules.filter((m) => moduleProgress(completed, m.id).pct === 100).length;
 
   return (

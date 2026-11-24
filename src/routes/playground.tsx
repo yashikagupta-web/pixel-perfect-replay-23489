@@ -7,6 +7,7 @@ import { CodeEditor } from "@/components/codecraft/CodeEditor";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { runJava, type RunResult } from "@/lib/java-runner";
+import { useActiveTimeTracker } from "@/lib/progress";
 import { DEFAULT_CODE, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +49,7 @@ function Playground() {
   const code = useStore((s) => s.playgroundCode);
   const setCode = useStore((s) => s.setPlaygroundCode);
   const fontSize = useStore((s) => s.settings.editorFontSize);
+  useActiveTimeTracker();
   const [result, setResult] = useState<RunResult | null>(null);
   const [running, setRunning] = useState(false);
 
